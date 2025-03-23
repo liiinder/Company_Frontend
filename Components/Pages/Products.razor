@@ -1,0 +1,67 @@
+﻿@using System.Net.Http.Json
+@using Company_Frontend.Components.DTO
+@using Company_Frontend.Components.Models
+@inject HttpClient httpClient
+@page "/products"
+
+<PageTitle>Products</PageTitle>
+
+<MudDataGrid Items="@products" Filterable="false" SortMode="@SortMode.None" Groupable="false">
+    <Columns>
+        <PropertyColumn Property="x => x.Name" />
+        <PropertyColumn Property="x => x.Description" />
+        <PropertyColumn Property="x => x.Price" Format="C" Title="Years Employed" />
+        <PropertyColumn Property="x => x.Status" />
+        <TemplateColumn CellClass="d-flex justify-end">
+            <CellTemplate>
+                <MudStack Row>
+                    @* <MudRating Size="@Size.Small" SelectedValue="@context.Item.Rating" /> *@
+                    @* <MudNumericField Label="Standard" Variant="Variant.Text" Min="0" /> *@
+                    <MudButton OnClick="@(()=>EditProduct(@context.Item))" Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary">Ändra</MudButton>
+                    <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Secondary">Ta bort</MudButton>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
+
+<MudGrid>
+    <MudItem xs="12" sm="7">
+        <MudPaper Class="pa-4">
+            <MudForm @ref="@form">
+                <MudTextField T="string" Label="Namn" Required="true" RequiredError="Namn behövs fyllas i!" Value="editProduct?.Name"/>
+                <MudTextField T="string" Label="Beskrivning" Value="editProduct?.Description"/>
+                <MudNumericField Label="Pris" Variant="Variant.Text" Min="0" Value="editProduct?.Price" />
+                <MudCheckBox T="bool" Label="Finns i sortimentet" Value="@((editProduct is null) ? false : editProduct.Status)" />
+            </MudForm>
+        </MudPaper>
+        <MudPaper Class="pa-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false">@((edit) ? "Spara ändring" : "Lägg till")</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(()=>{form.ResetAsync(); edit = false;})" DropShadow="false" Class="mx-2">Återställ</MudButton>
+            @* <MudButton Variant="Variant.Filled" Color="Color.Secondary" DropShadow="false" OnClick="@(()=>form.ResetAsync())" Class="mx-2">Reset</MudButton> *@
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    MudForm form;
+    public IEnumerable<Product> products;
+    public Product? editProduct;
+    private bool edit = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await httpClient.GetFromJsonAsync<List<Product>>("https://localhost:7227/api/product");
+    }
+
+    private void EditProduct(Product product)
+    {
+        edit = true;
+        editProduct = product;
+    }
+
+    private void AddProduct()
+    {
+        products = await httpClient.GetFromJsonAsync<List<Product>>("https://localhost:7227/api/product");
+    }
+}
