@@ -1,0 +1,179 @@
+﻿@page "/order"
+@using Company_Frontend.Components.Models
+@inject HttpClient httpClient
+
+<PageTitle>Shopping</PageTitle>
+<MudDrawerContainer Class="mud-height-full">
+    <MudDrawer @bind-Open="@_openEnd" Fixed="false" Anchor="Anchor.End" Elevation="0" 
+               Variant="@DrawerVariant.Persistent"
+               Overlay="false" Class="border-solid border-2 mud-border-grey">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Varukorg</MudText>
+        </MudDrawerHeader>
+
+        @if (orderDetails.Count == 0)
+        {
+            <MudText Typo="Typo.body1" Class="pa-4">Kundkorgen är tom.</MudText>
+        }
+        else
+        {
+            @foreach (var orderDetail in orderDetails)
+            {
+                <MudItem Class="mx-2 my-1">
+                    <MudCard Class="mud-elevation-4 pa-2">
+                        <MudText>@orderDetail.Product.Name</MudText>
+                        <MudNumericField T="int" Label="Antal" Variant="Variant.Text"
+                                        Min="0" @bind-Value="orderDetail.Quantity" For="@(() => orderDetail.Quantity)" 
+                                        FullWidth="false"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Primary" onclick="@((e) => RemoveFromBasket(orderDetail))"/>
+                    </MudCard>
+                </MudItem>
+            }
+        }
+        @if (currentUser is null)
+        {
+            <MudForm>
+                <MudTextField T="string" Label="Email" Variant="Variant.Filled" @bind-Value="enteredEmail" />
+                <MudButton OnClick="@AttemptLogin">Logga in</MudButton>
+            </MudForm>
+        }
+        else
+        {
+            <MudItem>
+                <MudCard>
+                    <MudButton OnClick="@OrderProducts" Color="Color.Primary">Lägg order</MudButton>
+                    <MudText Style="text-align:center;" Typo="Typo.h6">@currentUser.FirstName @currentUser.LastName</MudText>
+                    <MudButton OnClick="@Logout" Color="Color.Secondary">Logga ut</MudButton>
+                </MudCard>
+            </MudItem>
+        }
+
+    </MudDrawer>
+    <MudButton Color="Color.Primary" OnClick="@ToggleEndDrawer"
+               Variant="Variant.Filled" Class="mb-4">Visa varukorg</MudButton>
+    <div class="d-flex justify-center align-center mud-height-full">
+        <MudGrid>
+            @if (products == null)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else
+            {
+                @foreach (var product in products)
+                {
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudCard Class="mud-elevation-6">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6">@product.Name</MudText>
+                                <MudText Typo="Typo.body1">@product.Description</MudText>
+                                <MudText Typo="Typo.body1">@product.Price kr</MudText>
+                                <MudIconButton Icon="@Icons.Material.Outlined.ShoppingCart" OnClick="@((e) => AddProductToBasket(product))" Color="Color.Primary" Size="Size.Large" />
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
+            }
+        </MudGrid>
+    </div>
+</MudDrawerContainer>
+
+<MudPopover Open="@_orderSuccess" Fixed="true" Class="px-4 pt-4 pa-4 d-flex align-content-center"
+            TransformOrigin="Origin.CenterCenter" AnchorOrigin="Origin.CenterCenter">
+        <MudText Typo="Typo.h1" Class="pa-4">Order beställd!</MudText>
+        <MudButton OnClick="@ToggleOrderSuccess" Variant="Variant.Filled" Color="Color.Success">Close</MudButton>
+</MudPopover>
+
+@code {
+    public Customer? currentUser = null;
+    public List<OrderDetail> orderDetails = new List<OrderDetail>();
+    public IEnumerable<Product> products = new List<Product>();
+    public IEnumerable<Category> categories = new List<Category>();
+    public string enteredEmail;
+    private bool _orderSuccess;
+
+    private bool _openEnd = false;
+
+    private void ToggleEndDrawer()
+    {
+        _openEnd = !_openEnd;
+    }
+
+    private void ToggleOrderSuccess()
+    {
+        _orderSuccess = !_orderSuccess;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetProductsAsync();
+        await GetCategoriesAsync();
+    }
+
+    private async Task GetProductsAsync()
+    {
+        try
+        {
+            products = await httpClient.GetFromJsonAsync<List<Product>>("https://localhost:7227/api/product");
+        }
+        catch { } // logga om det blir något fel när man hämtar produkten?
+    }
+
+    private async Task GetCategoriesAsync()
+    {
+        try
+        {
+            categories = await httpClient.GetFromJsonAsync<List<Category>>("https://localhost:7227/api/category");
+        }
+        catch { }
+    }
+
+    private async Task AddProductToBasket(Product product)
+    {
+        var check = orderDetails.FirstOrDefault(x => x.Product.Id == product.Id);
+        if (check is null)
+        {
+            orderDetails.Add(new OrderDetail(product));
+        }
+        else
+        {
+            check.Quantity++;
+        }
+    }
+
+    private async Task RemoveFromBasket(OrderDetail orderDetail)
+    {
+        orderDetails.Remove(orderDetail);
+    }
+
+    private async Task AttemptLogin()
+    {
+        try
+        {
+            currentUser = await httpClient.GetFromJsonAsync<Customer>($"https://localhost:7227/api/customer/email/{enteredEmail}");
+        }
+        catch { } // logga om det blir något fel när man hämtar produkten?
+    }
+
+    private async Task OrderProducts()
+    {
+        Order newOrder = new();
+        newOrder.CustomerId = currentUser.Id;
+        newOrder.OrderDetails = orderDetails;
+        var response = new HttpResponseMessage();
+
+        try
+        {
+            Console.WriteLine("heyu");
+            response = await httpClient.PostAsJsonAsync("https://localhost:7227/api/order", newOrder);
+        }
+        catch { } // logga om det blir något fel när man hämtar produkten?
+
+        if (response.IsSuccessStatusCode)
+        {
+            _orderSuccess = true;
+            orderDetails = new List<OrderDetail>();
+        }
+    }
+
+    private void Logout() => currentUser = null;
+}

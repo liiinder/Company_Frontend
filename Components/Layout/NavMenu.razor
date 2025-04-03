@@ -1,10 +1,12 @@
 ﻿
 <MudNavMenu>
     <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
-    <MudNavLink Href="counter" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Add">Counter</MudNavLink>
-    
-    <MudNavLink Href="products" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">Products</MudNavLink>
+    <MudNavLink Href="order" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MenuBook">Beställ</MudNavLink>
 
+    <MudNavGroup Icon="@Icons.Material.Outlined.AdminPanelSettings" Title="Admin">
+        <MudNavLink Href="products" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Fastfood">Produkter</MudNavLink>
+        <MudNavLink Href="customers" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People">Kunder</MudNavLink>
+    </MudNavGroup>
 </MudNavMenu>
 
 

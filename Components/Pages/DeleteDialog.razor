@@ -1,0 +1,33 @@
+﻿@using Company_Frontend.Components.Models
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5">
+            Ta bort
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Inline="true">Är du säker på att du vill ta bort @Type</MudText>
+        <MudText Inline="true" Color="@Color.Secondary">@Name </MudText>
+        <MudText Inline="true">?</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Filled">Avbryt</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit">Ta bort</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string? Name { get; set; }
+
+    [Parameter]
+    public string? Type { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+}
